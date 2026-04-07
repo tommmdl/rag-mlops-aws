@@ -1,0 +1,20 @@
+# Copie para terraform.tfvars e ajuste (não commitar!)
+# cp terraform/terraform.tfvars.example terraform/terraform.tfvars
+
+aws_region   = "us-east-1"
+aws_profile  = "default"   # seu perfil AWS CLI
+environment  = "dev"
+project_name = "rag-mlops"
+
+# OpenSearch — t3.small.search = free tier (750h/mês por 12 meses)
+opensearch_instance_type = "t3.small.search"
+opensearch_volume_size   = 10  # GB — free tier cobre até 10 GB
+
+# Bedrock — modelos default (ótimo custo-benefício)
+bedrock_embedding_model = "amazon.titan-embed-text-v2:0"
+bedrock_llm_model       = "anthropic.claude-3-haiku-20240307-v1:0"
+
+# RAG parameters
+chunk_size    = 512
+chunk_overlap = 50
+top_k_results = 5
