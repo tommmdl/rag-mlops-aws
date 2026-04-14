@@ -1,38 +1,39 @@
 # ─── LAMBDA LAYER: dependências Python ───────────────────────────────────────
-
-resource "null_resource" "build_layer" {
-  triggers = {
-    requirements = filemd5("${path.module}/../requirements.txt")
-  }
-
-  provisioner "local-exec" {
-    command = <<EOT
-      rm -rf /tmp/rag-layer && mkdir -p /tmp/rag-layer/python
-      pip3 install -r ${path.module}/../requirements.txt \
-        --target /tmp/rag-layer/python \
-        --platform manylinux2014_x86_64 \
-        --only-binary=:all: \
-        --break-system-packages -q
-      cd /tmp/rag-layer && zip -r ${path.module}/layer.zip python -x "*.pyc" -x "*/__pycache__/*"
-    EOT
-  }
-}
+# O layer.zip é gerado por 'make build-layer' (scripts/build_layer.py) antes do apply.
 
 resource "aws_lambda_layer_version" "deps" {
   filename            = "${path.module}/layer.zip"
   layer_name          = "${var.project_name}-deps"
   compatible_runtimes = ["python3.12"]
-  source_code_hash    = fileexists("${path.module}/layer.zip") ? filebase64sha256("${path.module}/layer.zip") : null
-
-  depends_on = [null_resource.build_layer]
+  source_code_hash    = fileexists("${path.module}/layer.zip") ? filebase64sha256("${path.module}/layer.zip") : ""
 }
 
 # ─── LAMBDA: ingestão de documentos ──────────────────────────────────────────
 
 data "archive_file" "lambda_ingest" {
   type        = "zip"
-  source_dir  = "${path.module}/../src/ingestion"
   output_path = "${path.module}/lambda_ingest.zip"
+
+  source {
+    content  = file("${path.module}/../src/ingestion/handler.py")
+    filename = "handler.py"
+  }
+  source {
+    content  = file("${path.module}/../src/ingestion/chunker.py")
+    filename = "chunker.py"
+  }
+  source {
+    content  = file("${path.module}/../src/layers/shared/embedder.py")
+    filename = "shared/embedder.py"
+  }
+  source {
+    content  = file("${path.module}/../src/layers/shared/opensearch_client.py")
+    filename = "shared/opensearch_client.py"
+  }
+  source {
+    content  = ""
+    filename = "shared/__init__.py"
+  }
 }
 
 resource "aws_lambda_function" "ingest" {
@@ -73,8 +74,24 @@ resource "aws_cloudwatch_log_group" "ingest" {
 
 data "archive_file" "lambda_api" {
   type        = "zip"
-  source_dir  = "${path.module}/../src/api"
   output_path = "${path.module}/lambda_api.zip"
+
+  source {
+    content  = file("${path.module}/../src/api/handler.py")
+    filename = "handler.py"
+  }
+  source {
+    content  = file("${path.module}/../src/layers/shared/embedder.py")
+    filename = "shared/embedder.py"
+  }
+  source {
+    content  = file("${path.module}/../src/layers/shared/opensearch_client.py")
+    filename = "shared/opensearch_client.py"
+  }
+  source {
+    content  = ""
+    filename = "shared/__init__.py"
+  }
 }
 
 resource "aws_lambda_function" "api" {
