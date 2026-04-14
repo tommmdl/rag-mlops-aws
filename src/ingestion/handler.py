@@ -9,8 +9,8 @@ import logging
 from typing import Any
 
 from chunker import chunk_document
-from embedder import get_embeddings
-from opensearch_client import OpenSearchClient
+from shared.embedder import get_embeddings
+from shared.opensearch_client import OpenSearchClient
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -18,13 +18,18 @@ logger.setLevel(logging.INFO)
 ssm = boto3.client("ssm")
 s3  = boto3.client("s3")
 
+_opensearch_password: str | None = None
+
 
 def _get_opensearch_password() -> str:
-    resp = ssm.get_parameter(
-        Name=os.environ["SSM_PASSWORD_PATH"],
-        WithDecryption=True,
-    )
-    return resp["Parameter"]["Value"]
+    global _opensearch_password
+    if _opensearch_password is None:
+        resp = ssm.get_parameter(
+            Name=os.environ["SSM_PASSWORD_PATH"],
+            WithDecryption=True,
+        )
+        _opensearch_password = resp["Parameter"]["Value"]
+    return _opensearch_password
 
 
 def lambda_handler(event: dict, context: Any) -> dict:
