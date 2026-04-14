@@ -63,3 +63,9 @@ variable "top_k_results" {
   type        = number
   default     = 5
 }
+
+variable "alert_email" {
+  description = "Email para alertas de custo AWS Budget"
+  type        = string
+  default     = ""
+}

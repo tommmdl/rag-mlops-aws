@@ -22,6 +22,7 @@ venv/
 
 # Layer build
 /tmp/rag-layer/
+terraform/_layer_build/
 
 # Streamlit
 .streamlit/
@@ -34,6 +35,9 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Claude Code
+.claude/
 
 # Secrets (nunca commitar!)
 *.pem

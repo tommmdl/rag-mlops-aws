@@ -9,7 +9,11 @@ help: ## Mostra os comandos disponíveis
 
 # ─── INFRA ────────────────────────────────────────────────────────────────────
 
-up: ## Provisiona toda a infra na AWS (OpenSearch + Lambda + API GW + S3)
+build-layer: ## Compila o Lambda Layer (cross-platform — Windows/Mac/Linux)
+	@echo "\n📦 Compilando Lambda Layer...\n"
+	python3 scripts/build_layer.py
+
+up: build-layer ## Provisiona toda a infra na AWS (OpenSearch + Lambda + API GW + S3)
 	@echo "\n🚀 Provisionando infra RAG MLOps na AWS...\n"
 	cd terraform && terraform init -upgrade && terraform apply -auto-approve
 	@echo "\n✅ Infra provisionada! Endpoints disponíveis:\n"

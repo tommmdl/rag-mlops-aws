@@ -32,3 +32,8 @@ output "cost_alert" {
   description = "Lembrete de custo"
   value       = "⚠️  OpenSearch t3.small roda 24h. Execute 'make down' quando não estiver usando!"
 }
+
+output "budget_alert" {
+  description = "Resumo do AWS Budget configurado"
+  value       = "Budget mensal: ${aws_budgets_budget.monthly.limit_amount} USD — alertas em 50% (forecast), 80% e 100% (actual)"
+}
