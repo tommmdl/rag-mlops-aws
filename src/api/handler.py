@@ -9,12 +9,8 @@ import logging
 from datetime import datetime, timezone
 from typing import Any
 
-import sys
-sys.path.insert(0, "/opt/python")
-sys.path.insert(0, os.path.dirname(__file__) + "/../ingestion")
-
-from embedder import get_embedding
-from opensearch_client import OpenSearchClient
+from shared.embedder import get_embedding
+from shared.opensearch_client import OpenSearchClient
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
