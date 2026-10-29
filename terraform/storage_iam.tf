@@ -26,10 +26,10 @@ resource "aws_s3_bucket_public_access_block" "docs" {
 # ─── DYNAMODB: histórico de chat ──────────────────────────────────────────────
 
 resource "aws_dynamodb_table" "chat_history" {
-  name           = "${var.project_name}-chat-history-${var.environment}"
-  billing_mode   = "PAY_PER_REQUEST" # on-demand — free tier + custo só com uso
-  hash_key       = "session_id"
-  range_key      = "timestamp"
+  name         = "${var.project_name}-chat-history-${var.environment}"
+  billing_mode = "PAY_PER_REQUEST" # on-demand — free tier + custo só com uso
+  hash_key     = "session_id"
+  range_key    = "timestamp"
 
   attribute {
     name = "session_id"
@@ -74,15 +74,15 @@ resource "aws_iam_role_policy" "lambda_policy" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "Logs"
-        Effect = "Allow"
-        Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
+        Sid      = "Logs"
+        Effect   = "Allow"
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"]
         Resource = "arn:aws:logs:*:*:*"
       },
       {
-        Sid    = "S3Docs"
-        Effect = "Allow"
-        Action = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
+        Sid      = "S3Docs"
+        Effect   = "Allow"
+        Action   = ["s3:GetObject", "s3:PutObject", "s3:ListBucket"]
         Resource = [aws_s3_bucket.docs.arn, "${aws_s3_bucket.docs.arn}/*"]
       },
       {
@@ -95,15 +95,15 @@ resource "aws_iam_role_policy" "lambda_policy" {
         ]
       },
       {
-        Sid    = "OpenSearch"
-        Effect = "Allow"
-        Action = ["es:ESHttp*"]
+        Sid      = "OpenSearch"
+        Effect   = "Allow"
+        Action   = ["es:ESHttp*"]
         Resource = "${aws_opensearch_domain.main.arn}/*"
       },
       {
-        Sid    = "DynamoDB"
-        Effect = "Allow"
-        Action = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query"]
+        Sid      = "DynamoDB"
+        Effect   = "Allow"
+        Action   = ["dynamodb:PutItem", "dynamodb:GetItem", "dynamodb:Query"]
         Resource = aws_dynamodb_table.chat_history.arn
       },
       {

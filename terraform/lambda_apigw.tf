@@ -50,15 +50,15 @@ resource "aws_lambda_function" "ingest" {
 
   environment {
     variables = {
-      OPENSEARCH_ENDPOINT    = "https://${aws_opensearch_domain.main.endpoint}"
-      OPENSEARCH_INDEX       = "mlops-docs"
-      OPENSEARCH_USER        = "admin"
-      SSM_PASSWORD_PATH      = aws_ssm_parameter.opensearch_password.name
+      OPENSEARCH_ENDPOINT     = "https://${aws_opensearch_domain.main.endpoint}"
+      OPENSEARCH_INDEX        = "mlops-docs"
+      OPENSEARCH_USER         = "admin"
+      SSM_PASSWORD_PATH       = aws_ssm_parameter.opensearch_password.name
       BEDROCK_EMBEDDING_MODEL = var.bedrock_embedding_model
-      CHUNK_SIZE             = tostring(var.chunk_size)
-      CHUNK_OVERLAP          = tostring(var.chunk_overlap)
-      S3_DOCS_BUCKET         = aws_s3_bucket.docs.bucket
-      AWS_REGION_NAME        = var.aws_region
+      CHUNK_SIZE              = tostring(var.chunk_size)
+      CHUNK_OVERLAP           = tostring(var.chunk_overlap)
+      S3_DOCS_BUCKET          = aws_s3_bucket.docs.bucket
+      AWS_REGION_NAME         = var.aws_region
     }
   }
 
