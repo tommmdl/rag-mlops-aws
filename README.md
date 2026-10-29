@@ -1,156 +1,155 @@
-# RAG MLOps Assistant 🤖
+# RAG MLOps Assistant
 
-Sistema de perguntas e respostas sobre MLOps construído 100% na AWS.
-Projeto de portfólio demonstrando a combinação de **MLOps + FinOps + Cloud Engineering**.
+**English** · [Português](README.pt-BR.md)
 
+A question-answering service about MLOps, built on AWS managed services: Bedrock for embeddings and generation, OpenSearch for kNN retrieval, Lambda and API Gateway for serving, and Terraform for the whole stack. The goal is a retrieval-augmented generation (RAG) stack that can be created and destroyed on demand at near-zero cost.
+
+[![CI](https://github.com/tommmdl/rag-mlops-aws/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/tommmdl/rag-mlops-aws/actions/workflows/ci.yml)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://python.org)
 [![Terraform](https://img.shields.io/badge/terraform-≥1.6-purple.svg)](https://terraform.io)
-[![AWS](https://img.shields.io/badge/cloud-AWS-orange.svg)](https://aws.amazon.com)
 
-## Arquitetura
+## Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│              PIPELINE DE INGESTÃO (offline)          │
+│              INGESTION PIPELINE (offline)           │
 │                                                     │
-│  S3 Docs → Lambda Ingest → Bedrock Titan V2 →       │
-│                         OpenSearch (kNN index)       │
+│  S3 docs → Lambda ingest → Bedrock Titan V2 →       │
+│                          OpenSearch (kNN index)     │
 └─────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────┐
-│              PIPELINE DE INFERÊNCIA (online)         │
+│              INFERENCE PIPELINE (online)            │
 │                                                     │
-│  Usuário → API Gateway → Lambda RAG                 │
+│  User → API Gateway → Lambda RAG                    │
 │                │                                    │
-│                ├── Bedrock Titan (embed query)       │
-│                ├── OpenSearch kNN (retrieve top-k)   │
-│                └── Bedrock Claude 3 Haiku (gerar)   │
+│                ├── Bedrock Titan (embed query)      │
+│                ├── OpenSearch kNN (retrieve top-k)  │
+│                └── Bedrock Claude 3 Haiku (answer)  │
 │                                                     │
-│  DynamoDB ← histórico de chat                       │
+│  DynamoDB ← chat history                            │
 └─────────────────────────────────────────────────────┘
 ```
 
-## Stack
+The embedding and generation models are Terraform variables (`bedrock_embedding_model`, `bedrock_llm_model`). The IAM policy in `terraform/storage_iam.tf` grants access to those two model ARNs only, so changing a model means updating both.
 
-| Serviço | Uso | Custo estimado |
-|---------|-----|----------------|
-| OpenSearch t3.small | Vector store (kNN) | Free tier 12 meses |
-| Bedrock Titan Embeddings V2 | Geração de embeddings | ~$0.10 (ingestão) |
-| Bedrock Claude 3 Haiku | Geração de respostas | ~$0.15/mês (500 queries) |
-| Lambda | Ingestão + API RAG | Free tier |
+## Stack and estimated cost
+
+| Service | Role | Estimated cost |
+|---------|------|----------------|
+| OpenSearch t3.small | Vector store (kNN, HNSW) | Free tier for 12 months |
+| Bedrock Titan Embeddings V2 | Embeddings | ~$0.10 per ingestion |
+| Bedrock Claude 3 Haiku | Answer generation | ~$0.15/month for 500 queries |
+| Lambda | Ingestion and RAG API | Free tier |
 | API Gateway | HTTP endpoint | Free tier |
-| S3 | Armazenamento de docs | Free tier |
-| DynamoDB | Histórico de chat | Free tier |
-| **Total estimado** | | **~$0–$0.30/mês** |
+| S3 | Source documents | Free tier |
+| DynamoDB | Chat history | Free tier |
+| **Estimated total** | | **~$0–0.30/month** |
 
-> ⚠️ O OpenSearch consome horas do free tier mesmo parado. Use `make down` quando não estiver usando.
+These are estimates from public pricing, not measured bills. A $10/month AWS Budget (`terraform/budget.tf`) alerts at 50% forecast and at 80% and 100% actual spend; the alert address comes from `alert_email` in `terraform.tfvars`.
 
-## Pré-requisitos
+> ⚠️ OpenSearch uses free-tier hours even when idle. Run `make down` when you are done.
 
-```bash
-# AWS CLI configurado
-aws configure
-
-# Terraform >= 1.6
-terraform --version
-
-# Python 3.12+
-python3 --version
-
-# Dependências Python
-make install
-```
-
-## Ciclo de uso (portfólio)
+## Prerequisites
 
 ```bash
-# 1. Provisiona toda a infra na AWS
-make up
-
-# 2. Faz upload e ingestão dos documentos MLOps
-make ingest
-
-# 3. Testa uma query
-make query
-
-# 4. Abre interface Streamlit para demo/gravação
-make demo
-
-# 5. Destroi tudo — custo zerado
-make down
+aws configure          # AWS CLI with credentials
+terraform --version    # Terraform >= 1.6
+python3 --version      # Python 3.12+
+make install           # Python dependencies
 ```
 
-## Comandos disponíveis
+## Usage cycle
 
 ```bash
-make help       # lista todos os comandos
-make up         # terraform apply — sobe infra
-make down       # terraform destroy — destrói tudo
-make status     # estado atual da infra
-make ingest     # ingestão de docs (após make up)
-make ingest-local # testa ingestão localmente (sem AWS)
-make query      # query de teste
-make demo       # abre Streamlit
-make logs-api   # CloudWatch logs da API em tempo real
-make logs-ingest # CloudWatch logs da ingestão
-make install    # instala dependências Python
-make lint       # ruff no código
-make clean      # limpa cache
+make up        # 1. provision the stack (terraform apply)
+make ingest    # 2. upload and ingest the MLOps documents
+make query     # 3. run a test query
+make demo      # 4. open the Streamlit UI
+make down      # 5. destroy everything (terraform destroy)
 ```
 
-## Adicionando documentos
-
-Coloque arquivos `.md`, `.txt` ou `.rst` na pasta `docs/` e rode:
+## Commands
 
 ```bash
-make ingest
+make help          # list all commands
+make build-layer   # build the shared Lambda layer
+make up            # terraform apply
+make down          # terraform destroy
+make status        # current state of the stack
+make ingest        # ingest docs (after make up)
+make ingest-local  # test ingestion locally, without AWS
+make query         # test query
+make demo          # Streamlit UI
+make logs-api      # tail the API Lambda logs in CloudWatch
+make logs-ingest   # tail the ingestion Lambda logs
+make install       # install Python dependencies
+make lint          # ruff
+make clean         # remove caches
 ```
 
-Para ingerir um arquivo específico:
+## Adding documents
+
+Put `.md`, `.txt` or `.rst` files in `docs/` and run `make ingest`. To ingest one file:
+
 ```bash
-python3 scripts/ingest.py --api-url <URL> --file docs/meu-doc.md
+python3 scripts/ingest.py --api-url <URL> --file docs/my-doc.md
 ```
 
-## Estrutura do repositório
+## CI
+
+[`ci.yml`](.github/workflows/ci.yml) runs on every push and pull request to `master`:
+
+- unit tests with pytest, ruff lint, and local chunking and ingestion checks with no AWS calls;
+- `terraform fmt -check`, `init` without a backend and `validate`.
+
+The workflow also defines a deploy job (OIDC credentials, plan, apply, ingestion, health check) behind a protected `production` environment. It is gated on `main` while this repository uses `master`, so it has not run: CI validates the code and the Terraform, and deployment is manual with `make up`.
+
+## Repository layout
 
 ```
 rag-mlops-aws/
-├── Makefile                    # comandos principais
-├── requirements.txt            # dependências Python
+├── Makefile                     # main commands
+├── requirements.txt             # Python dependencies
 ├── terraform/
-│   ├── main.tf                 # provider + backend
-│   ├── variables.tf            # variáveis configuráveis
-│   ├── opensearch.tf           # OpenSearch t3.small (free tier)
-│   ├── storage_iam.tf          # S3, DynamoDB, IAM Role
-│   ├── lambda_apigw.tf         # Lambda + API Gateway
-│   └── outputs.tf              # endpoints e ARNs
+│   ├── main.tf                  # provider and backend
+│   ├── variables.tf             # configurable variables
+│   ├── opensearch.tf            # OpenSearch t3.small
+│   ├── storage_iam.tf           # S3, DynamoDB, IAM role
+│   ├── lambda_apigw.tf          # Lambda and API Gateway
+│   ├── budget.tf                # monthly cost alert
+│   └── outputs.tf               # endpoints and ARNs
 ├── src/
 │   ├── ingestion/
-│   │   ├── handler.py          # Lambda ingestão
-│   │   ├── chunker.py          # document chunking
-│   │   ├── embedder.py         # Bedrock Titan embeddings
-│   │   └── opensearch_client.py # cliente OpenSearch
+│   │   ├── handler.py           # ingestion Lambda
+│   │   └── chunker.py           # document chunking
+│   ├── layers/shared/
+│   │   ├── embedder.py          # Bedrock Titan embeddings
+│   │   └── opensearch_client.py # OpenSearch client
 │   └── api/
-│       └── handler.py          # Lambda RAG (query + geração)
+│       └── handler.py           # RAG Lambda (retrieval and generation)
+├── tests/                       # unit tests (pytest)
 ├── scripts/
-│   ├── ingest.py               # CLI ingestão
-│   └── query.py                # CLI queries + modo interativo
+│   ├── build_layer.py           # builds the shared Lambda layer
+│   ├── ingest.py                # ingestion CLI
+│   └── query.py                 # query CLI with an interactive mode
 ├── streamlit/
-│   └── app.py                  # interface visual (portfólio)
-└── docs/
-    └── mlops-fundamentals.md   # base de conhecimento inicial
+│   └── app.py                   # demo UI
+└── docs/                        # knowledge base for ingestion
 ```
 
-## Conceitos demonstrados
+## What it covers
 
-- **RAG** (Retrieval-Augmented Generation) — arquitetura completa end-to-end
-- **Vector Search** — kNN com HNSW no OpenSearch
-- **Serverless ML inference** — Bedrock on-demand, sem gestão de GPU
-- **IaC** — Terraform para toda a stack, destroy/apply seguro
-- **FinOps** — custo controlado, free tier maximizado, ciclo destroy/apply
-- **CI/CD ready** — estrutura modular para GitHub Actions
+- **RAG** end to end: chunking, embeddings, kNN retrieval and grounded generation.
+- **Vector search** with HNSW in OpenSearch.
+- **Serverless inference** with on-demand Bedrock, no GPUs to manage.
+- **Infrastructure as code** for the whole stack, built to be applied and destroyed repeatedly.
+- **FinOps**: free-tier sizing, a budget alert and a destroy-by-default usage cycle.
 
-## Autor
+## Author
 
-Rafael — Cloud Operator Sênior | FinOps | MLOps  
-[GitHub](https://github.com/tommmdl) | [LinkedIn](https://linkedin.com)
+Rafael Santiago Silva · [GitHub](https://github.com/tommmdl) · [LinkedIn](https://www.linkedin.com/in/rafael-santiago-silva-68420759/)
+
+## License
+
+MIT. See [LICENSE](LICENSE).
