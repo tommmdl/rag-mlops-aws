@@ -2,9 +2,9 @@ name: RAG MLOps CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master]
   pull_request:
-    branches: [main]
+    branches: [master]
 
 env:
   AWS_REGION: us-east-1
@@ -26,7 +26,10 @@ jobs:
           cache: pip
 
       - name: Instala dependências
-        run: pip install ruff pytest -r requirements.txt
+        run: pip install ruff==0.17.3 pytest -r requirements.txt
+
+      - name: Testes unitários
+        run: pytest -q
 
       - name: Lint (ruff)
         run: ruff check src/ scripts/ streamlit/

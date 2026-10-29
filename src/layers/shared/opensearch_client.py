@@ -1,11 +1,8 @@
 """opensearch_client.py — abstração do OpenSearch para ingestão e busca"""
-import json
 import logging
 from typing import List
 
-import boto3
 from opensearchpy import OpenSearch, RequestsHttpConnection, helpers
-from requests_aws4auth import AWS4Auth
 
 logger = logging.getLogger(__name__)
 

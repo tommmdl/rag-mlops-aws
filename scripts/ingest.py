@@ -6,8 +6,6 @@ Uso:
   python3 scripts/ingest.py --local --docs-dir docs/
 """
 import argparse
-import json
-import os
 import sys
 import time
 import glob

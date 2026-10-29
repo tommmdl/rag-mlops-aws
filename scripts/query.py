@@ -6,7 +6,6 @@ Uso:
   python3 scripts/query.py --api-url <URL>  # modo interativo
 """
 import argparse
-import json
 import sys
 import uuid
 import requests
